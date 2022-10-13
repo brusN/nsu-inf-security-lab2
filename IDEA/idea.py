@@ -1,7 +1,5 @@
 import gmpy2
-import sys
-import codecs
-
+import hashlib
 
 # Theory and IDEA step-by-step description: https://intuit.ru/studies/courses/13837/1234/lecture/31198?page=7
 
@@ -181,17 +179,15 @@ class IDEA:
         return ciphertext
 
 
+def calcFileHash(filename):
+    hash_md5 = hashlib.md5()
+    with open(filename, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
 def main():
-    if len(sys.argv) == 1:
-        print('Should be in arg file path!\nExample >>> idea.py file.txt')
-        exit(1)
-
     key = 0x2BD6459F82C5B300952C49104881FF48  # 128-bit key
-    plaintext = 0xF129A6601EF62A47    # 64-bit block
-
-    print('>>> Encryption')
-    print('Key: \t\t', hex(key))
-
     my_IDEA = IDEA(key)
 
     # Encrypt file
@@ -225,6 +221,9 @@ def main():
         exit(1)
 
     decrypted_file.close()
+
+    # Calc hash of encrypted file
+    print('Hash >>> ' + calcFileHash('../files/encrypted_file.txt'))
 
 
 if __name__ == '__main__':

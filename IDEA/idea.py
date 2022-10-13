@@ -186,6 +186,7 @@ def calcFileHash(filename):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
+
 def main():
     key = 0x2BD6459F82C5B300952C49104881FF48  # 128-bit key
     my_IDEA = IDEA(key)

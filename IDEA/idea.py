@@ -1,4 +1,7 @@
 import gmpy2
+import sys
+import codecs
+
 
 # Theory and IDEA step-by-step description: https://intuit.ru/studies/courses/13837/1234/lecture/31198?page=7
 
@@ -38,10 +41,10 @@ def _KA_layer(x1, x2, x3, x4, round_keys):
     assert 0 <= z3 <= 0xFFFF
     assert 0 <= z4 <= 0xFFFF
 
-    y1 = _mul(x1, z1)           # 1. Modular mul subblock x1, subkey z1
-    y2 = (x2 + z2) % 0x10000    # 2. Modular add subblock x2, subkey z2
-    y3 = (x3 + z3) % 0x10000    # 3. Modular add subblock x3, subkey z3
-    y4 = _mul(x4, z4)           # 4. Modular mul subblock x4, subkey z4
+    y1 = _mul(x1, z1)  # 1. Modular mul subblock x1, subkey z1
+    y2 = (x2 + z2) % 0x10000  # 2. Modular add subblock x2, subkey z2
+    y3 = (x3 + z3) % 0x10000  # 3. Modular add subblock x3, subkey z3
+    y4 = _mul(x4, z4)  # 4. Modular mul subblock x4, subkey z4
 
     return y1, y2, y3, y4
 
@@ -60,8 +63,8 @@ def _MA_layer(y1, y2, y3, y4, round_keys):
     assert 0 <= z5 <= 0xFFFF
     assert 0 <= z6 <= 0xFFFF
 
-    p = y1 ^ y3   # 5. Xor y1 and y3
-    q = y2 ^ y4   # 6. Xor y2 and y4
+    p = y1 ^ y3  # 5. Xor y1 and y3
+    q = y2 ^ y4  # 6. Xor y2 and y4
 
     s = _mul(p, z5)  # 7. Mul result of 5th step and 5th subkey
     t = _mul((q + s) % 0x10000, z6)  # 8-9. Modular add results of 6-7 steps and mul result 8th step with 6th subkey
@@ -179,21 +182,49 @@ class IDEA:
 
 
 def main():
-    key = 0x2BD6459F82C5B300952C49104881FF48      # 128-bit key
-    plaintext = 0xF129A6601EF62A47                # 64-bit block
+    if len(sys.argv) == 1:
+        print('Should be in arg file path!\nExample >>> idea.py file.txt')
+        exit(1)
+
+    key = 0x2BD6459F82C5B300952C49104881FF48  # 128-bit key
+    plaintext = 0xF129A6601EF62A47    # 64-bit block
 
     print('>>> Encryption')
     print('Key: \t\t', hex(key))
-    print('Plaintext: \t', hex(plaintext))
 
     my_IDEA = IDEA(key)
-    encrypted = my_IDEA.enc_dec(plaintext, 0)
-    print('Encrypted:\t', hex(encrypted))
 
-    print('\n>>> Decryption')
-    decrypted = my_IDEA.enc_dec(encrypted, 1)
-    assert decrypted == plaintext
-    print('Decrypted:\t', hex(decrypted))
+    # Encrypt file
+    encrypted_file = open('../files/encrypted_file.txt', 'wb+')
+    try:
+        with open('../files/testfile.txt', 'rb') as file:
+            block = int.from_bytes(file.read(8), "big")
+            while block:
+                encryptedBlock = my_IDEA.enc_dec(block, 0)
+                encryptedBytes = encryptedBlock.to_bytes(8, 'big')
+                encrypted_file.write(encryptedBytes)
+                block = int.from_bytes(file.read(8), "big")
+    except IOError:
+        print('Error while opening input file!')
+        exit(1)
+
+    encrypted_file.close()
+
+    # Decrypt file
+    decrypted_file = open('../files/decrypted_file.txt', 'wb+')
+    try:
+        with open('../files/encrypted_file.txt', 'rb') as encrypted_file:
+            block = int.from_bytes(encrypted_file.read(8), "big")
+            while block:
+                decryptedBlock = my_IDEA.enc_dec(block, 1)
+                decryptedBytes = int(decryptedBlock).to_bytes(8, 'big')
+                decrypted_file.write(decryptedBytes)
+                block = int.from_bytes(encrypted_file.read(8), "big")
+    except IOError:
+        print('Error while opening encrypted file!')
+        exit(1)
+
+    decrypted_file.close()
 
 
 if __name__ == '__main__':
